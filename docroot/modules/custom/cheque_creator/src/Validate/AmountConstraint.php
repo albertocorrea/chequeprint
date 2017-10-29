@@ -32,6 +32,7 @@ class AmountConstraint {
       );
     }
 
+    $value = str_replace(array(','), '' , trim($value));
     $amount = (float) $value;
     if ($amount > self::$_limit) {
       $formState->setError(
