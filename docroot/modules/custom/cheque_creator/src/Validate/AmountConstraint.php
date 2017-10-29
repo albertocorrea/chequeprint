@@ -9,7 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
  */
 class AmountConstraint {
 
-  static $_limit = 100000000000000000000;
+  static $_limit = 100000000000000;
   /**
    * Validates given element.
    *
@@ -24,8 +24,8 @@ class AmountConstraint {
     if ($value === '' || is_array($value)) {
       return;
     }
-    $value = str_replace(array(',', ' ','$'), '' , trim($value));
-    if (!preg_match('/^[0-9]+(?:\.[0-9]{0,2})?$/', $value)) {
+    $value = str_replace(array(' ','$'), '' , trim($value));
+    if (!preg_match('/^[0-9]{1,3}(,[0-9]{3})*\.[0-9]+$/', $value)) {
       $formState->setError(
         $element,
         t('Please insert a currency value in the format 1,423.45')

@@ -25,11 +25,9 @@ function cheque_creator_webform_element_alter(array &$element, FormStateInterfac
  */
 
 function cheque_creator_preprocess_webform_confirmation(array &$variables) {
-
   $data = $variables['webform_submission']->getData();
   $cheque_markup = str_replace('--TEXT-AMOUNT--',cheque_creator_convert_number($data['amount']), $variables['message']['#markup']);
   $variables['message']['#markup'] = '<div class="cheque-wrapper">'.$cheque_markup.'</div>';
-
 }
 
 /**
@@ -39,6 +37,7 @@ function cheque_creator_preprocess_webform_confirmation(array &$variables) {
  */
 
 function cheque_creator_convert_number($num = false) {
+
   $num_word = '';
   $num = str_replace(array(',', ' ','$'), '' , trim($num));
   if(!$num) {
@@ -46,14 +45,16 @@ function cheque_creator_convert_number($num = false) {
   }
   $num_parts = explode('.',$num);
   if (isset($num_parts[0]) && floatval($num_parts[0]) != 0) {
-    $label = floatval($num_parts[0]) > 1 ? 'dollars' : 'dollar';
-    $num_word = cheque_creator_convert_number_to_word($num_parts[0]). 'dollars';
+    $label = floatval($num_parts[0]) > 1 ? ' dollars' : ' dollar';
+    $num_word = trim(cheque_creator_convert_number_to_word($num_parts[0])). $label;
   }
 
   if (isset($num_parts[1]) && floatval($num_parts[1]) != 0) {
-    $label = floatval($num_parts[1]) > 1 ? 'cents' : 'cent';
-    $num_word.= ' AND '.cheque_creator_convert_number_to_word($num_parts[1]). $label;
+    $label = floatval($num_parts[1]) > 1 ? ' cents' : ' cent';
+    $num_word.= ' AND '.trim(cheque_creator_convert_number_to_word($num_parts[1])). $label;
   }
+
+  $num_word = str_replace(', dollar',' dollar',$num_word);
   return strtoupper($num_word);
 }
 
@@ -64,8 +65,6 @@ function cheque_creator_convert_number($num = false) {
  */
 
 function cheque_creator_convert_number_to_word($num = false) {
-
-  $num = (int) $num;
   $words = array();
   $list1 = array('', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
     'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'
@@ -88,9 +87,9 @@ function cheque_creator_convert_number_to_word($num = false) {
       $tens = ($tens ? ' ' . $list1[$tens] . ' ' : '' );
     } else {
       $tens = (int)($tens / 10);
-      $tens = ' ' . $list2[$tens] . ' ';
+      $tens =  $list2[$tens] . ' ';
       $singles = (int) ($num_levels[$i] % 10);
-      $singles = ' ' . $list1[$singles] . ' ';
+      $singles = $list1[$singles] . ' ';
     }
 
     $words[] = $hundreds . $tens . $singles . ( ( $levels && ( int ) ( $num_levels[$i] ) ) ? ' ' . $list3[$levels] . ' ' : '' );
