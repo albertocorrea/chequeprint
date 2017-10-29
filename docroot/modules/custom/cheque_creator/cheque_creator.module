@@ -1,0 +1,108 @@
+<?php
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_webform_element_alter().
+ *
+ * @param array              $element
+ * @param FormStateInterface $form_state
+ * @param array              $context
+ */
+
+function cheque_creator_webform_element_alter(array &$element, FormStateInterface $form_state, array $context) {
+  if ($element['#webform_id'] === 'cheque_creator--amount') {
+    $element['#element_validate'][] = array(
+      'Drupal\cheque_creator\Validate\AmountConstraint',
+      'validate'
+    );
+  }
+}
+
+/**
+ * Implements hook_preprocess_webform_confirmation().
+ *
+ * @param array              $variables
+ */
+
+function cheque_creator_preprocess_webform_confirmation(array &$variables) {
+
+  $data = $variables['webform_submission']->getData();
+  $cheque_markup = str_replace('--TEXT-AMOUNT--',cheque_creator_convert_number($data['amount']), $variables['message']['#markup']);
+  $variables['message']['#markup'] = '<div class="cheque-wrapper">'.$cheque_markup.'</div>';
+
+}
+
+/**
+ * Convert Currency to words
+ *
+ * @param                $num
+ */
+
+function cheque_creator_convert_number($num = false) {
+  $num_word = '';
+  $num = str_replace(array(',', ' ','$'), '' , trim($num));
+  if(!$num) {
+    return '';
+  }
+  $num_parts = explode('.',$num);
+  if (isset($num_parts[0]) && floatval($num_parts[0]) != 0) {
+    $label = floatval($num_parts[0]) > 1 ? 'dollars' : 'dollar';
+    $num_word = cheque_creator_convert_number_to_word($num_parts[0]). 'dollars';
+  }
+
+  if (isset($num_parts[1]) && floatval($num_parts[1]) != 0) {
+    $label = floatval($num_parts[1]) > 1 ? 'cents' : 'cent';
+    $num_word.= ' AND '.cheque_creator_convert_number_to_word($num_parts[1]). $label;
+  }
+  return strtoupper($num_word);
+}
+
+/**
+ * Convert Number to words
+ *
+ * @param                $num
+ */
+
+function cheque_creator_convert_number_to_word($num = false) {
+
+  $num = (int) $num;
+  $words = array();
+  $list1 = array('', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+    'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'
+  );
+  $list2 = array('', 'ten', 'twenty-', 'thirty-', 'forty-', 'fifty-', 'sixty-', 'seventy-', 'eighty-', 'ninety-', 'hundred');
+  $list3 = array('', 'thousand,', 'million,', 'billion,', 'trillion,');
+  $num_length = strlen($num);
+  $levels = (int) (($num_length + 2) / 3);
+  $max_length = $levels * 3;
+  $num = substr('00' . $num, -$max_length);
+  $num_levels = str_split($num, 3);
+
+  for ($i = 0; $i < count($num_levels); $i++) {
+    $levels--;
+    $hundreds = (int) ($num_levels[$i] / 100);
+    $hundreds = ($hundreds ? ' ' . $list1[$hundreds] . ' hundred' . ' ' : '');
+    $tens = (int) ($num_levels[$i] % 100);
+    $singles = '';
+    if ( $tens < 20 ) {
+      $tens = ($tens ? ' ' . $list1[$tens] . ' ' : '' );
+    } else {
+      $tens = (int)($tens / 10);
+      $tens = ' ' . $list2[$tens] . ' ';
+      $singles = (int) ($num_levels[$i] % 10);
+      $singles = ' ' . $list1[$singles] . ' ';
+    }
+
+    $words[] = $hundreds . $tens . $singles . ( ( $levels && ( int ) ( $num_levels[$i] ) ) ? ' ' . $list3[$levels] . ' ' : '' );
+
+  }
+
+  $commas = count($words);
+  if ($commas > 1) {
+    $commas = $commas - 1;
+  }
+
+  $words = implode(' ', $words);
+  $words = str_replace('- ','-', $words);
+  return $words;
+}
